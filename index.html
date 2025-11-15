@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark" data-lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat Agent Co‑Pilot</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "ui-sans-serif", "system-ui"],
+            display: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+            mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular"],
+          },
+          dropShadow: {
+            glow: "0 0 30px rgba(34,211,238,.4)",
+          },
+          boxShadow: {
+            glass: "0 10px 40px rgba(2,6,23,0.6)",
+          },
+          colors: {
+            brand: {
+              50: "#ECFEFF",
+              100: "#CFFAFE",
+              200: "#A5F3FC",
+              300: "#67E8F9",
+              400: "#22D3EE",
+              500: "#06B6D4",
+              600: "#0891B2",
+              700: "#0E7490",
+              800: "#155E75",
+              900: "#164E63",
+            },
+            accent: {
+              400: "#E879F9",
+              500: "#D946EF",
+            },
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <!-- App Styles -->
+  <link rel="stylesheet" href="index.css" />
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0"
+  }
+}
+</script>
+</head>
+<body class="antialiased">
+  <div class="bg-aurora"></div>
+  <div class="bg-grid"></div>
+
+  <!-- Top Bar -->
+  <header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:glass border-b border-border">
+    <div class="px-8 py-3 flex items-center gap-3">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-brand-400 to-accent-500 flex items-center justify-center drop-shadow-glow">
+          <i class="ph ph-sparkle text-slate-900 text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-display text-xl font-bold leading-tight text-text-strong" data-i18n="header.title">Chat Agent Co‑Pilot</h1>
+          <p class="text-xs text-text-light -mt-0.5">
+            <span data-i18n="header.subtitle.main">Gemini powered</span>
+            <span class="text-slate-500/80 ml-1" data-i18n="header.subtitle.soon">(soon GPT powered)</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="ml-auto flex items-center gap-2">
+        <button id="historyBtn" class="btn btn-ghost"><i class="ph ph-clock-counter-clockwise"></i> <span data-i18n="header.historyBtn">Historique</span></button>
+        <div class="relative" id="settings-menu-container">
+          <button id="settingsBtn" class="btn btn-ghost" title="Paramètres"><i class="ph ph-wrench"></i></button>
+          <div id="settingsDropdown" class="hidden absolute right-0 mt-2 w-56 origin-top-right glass rounded-xl shadow-lg z-50">
+              <div class="p-2">
+                  <button id="settingsPageBtn" data-i18n="header.settingsBtn" class="w-full text-left block px-4 py-2 text-sm rounded-lg hover:bg-slate-700/50">Paramètres</button>
+                  <a href="#" id="adminViewBtn" data-i18n="header.adminBtn" class="block px-4 py-2 text-sm rounded-lg hover:bg-slate-700/50">Centre d’administration</a>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- App Shell -->
+  <main id="main-app-container" class="p-8 grid grid-cols-1 xl:grid-cols-12 gap-6">
+    <!-- KB Panel -->
+    <section class="xl:col-span-4 glass rounded-2xl shadow-glass flex flex-col">
+      <div class="p-5 border-b border-border flex items-center gap-2">
+        <h2 class="font-display text-lg text-text-strong flex items-center gap-2"><i class="ph ph-books text-brand-400"></i> <span data-i18n="kb.title">Base de connaissances</span></h2>
+      </div>
+      <div class="p-5 flex-grow flex flex-col min-h-0">
+        <div class="relative mb-3">
+            <input id="kbSearchInput" type="search" data-i18n-placeholder="kb.searchPlaceholder" placeholder="Rechercher dans la KB..." class="w-full bg-surface border border-border rounded-xl px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/60">
+            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-text-light"></i>
+        </div>
+        <div id="kb-structured-content" class="space-y-2 overflow-y-auto flex-grow pr-2">
+            <!-- Structured KB will be injected here by index.tsx -->
+        </div>
+        <div class="mt-3 flex items-center justify-between text-xs text-text-light">
+          <div class="flex gap-2 flex-wrap">
+            <span class="tag">#retours</span>
+            <span class="tag">#garantie</span>
+            <span class="tag">#livraison</span>
+          </div>
+          <button id="resetKbBtn" class="btn btn-ghost text-xs"><i class="ph ph-arrow-counter-clockwise"></i> <span data-i18n="kb.resetBtn">Réinitialiser</span></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Compose + Results -->
+    <section class="xl:col-span-5 space-y-6">
+      
+      <!-- View 1: Composer & Results -->
+      <div id="main-view">
+        <!-- Composer -->
+        <div class="glass rounded-2xl shadow-glass">
+          <div class="p-5 border-b border-border flex items-center gap-3">
+            <h2 class="font-display text-lg text-text-strong flex items-center gap-2"><i class="ph ph-chat-circle-dots text-brand-400"></i> <span data-i18n="composer.title">Message du client</span></h2>
+            <div class="ml-auto flex items-center gap-2 text-xs">
+              <span class="hidden md:inline text-text-light" data-i18n="composer.shortcutLabel">Raccourci</span>
+              <span class="kbd">Ctrl</span><span>+</span><span class="kbd">Enter</span>
+            </div>
+          </div>
+          <div class="p-5 pt-4">
+            <div class="flex items-center gap-2 mb-2">
+                <button id="translateBtn" class="btn btn-ghost text-sm"><i class="ph ph-translate"></i> <span data-i18n="composer.translateBtn">Traduire en FR</span></button>
+            </div>
+            <textarea id="customer-question" rows="6" class="w-full p-4 bg-surface rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand-500/60 placeholder-slate-500" data-i18n-placeholder="composer.placeholder" placeholder="Collez ici le message du client..."></textarea>
+            <div id="translation-output" class="hidden mt-2 p-3 bg-slate-900/40 border border-slate-700/60 rounded-xl text-sm text-slate-400 italic"></div>
+            
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+              <div class="flex-grow flex flex-wrap gap-2">
+                <div id="format-switch" class="flex items-center p-1 bg-surface rounded-xl border border-border">
+                    <button data-format="email" class="btn format-btn active w-full md:w-auto text-sm px-4 py-1.5"><i class="ph ph-envelope"></i> Email</button>
+                    <button data-format="chat" class="btn format-btn w-full md:w-auto text-sm px-4 py-1.5"><i class="ph ph-chats"></i> Chat</button>
+                </div>
+                <button id="generate-button" class="btn btn-primary w-full md:w-auto"><i class="ph ph-magic-wand"></i> <span data-i18n="composer.generateBtn">Générer</span></button>
+              </div>
+              <button id="resetQuestionBtn" class="btn btn-ghost"><i class="ph ph-eraser"></i> <span data-i18n="composer.clearBtn">Effacer</span></button>
+            </div>
+
+          </div>
+          <div class="px-5 py-4 border-t border-border flex flex-wrap items-center gap-x-6 gap-y-4 text-sm">
+            <label class="flex items-center gap-2">
+              <span class="text-text-light" data-i18n="composer.modelLabel">Modèle</span>
+              <select id="modelSelect" class="bg-surface border border-border rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-500/60">
+                <optgroup label="Gemini">
+                  <option value="gemini-2.5-flash" selected>gemini-2.5-flash</option>
+                  <option value="gemini-1.5-pro-latest">gemini-1.5-pro</option>
+                </optgroup>
+                <optgroup label="OpenAI (non-supporté)">
+                  <option value="gpt-4" disabled>gpt-4</option>
+                  <option value="gpt-3.5-turbo" disabled>gpt-3.5-turbo</option>
+                </optgroup>
+              </select>
+            </label>
+            <label class="flex items-center gap-2">
+              <span class="text-text-light" data-i18n="composer.creativityLabel">Créativité</span>
+              <input id="tempRange" type="range" min="0" max="1" step="0.1" value="0.6" class="w-24" />
+              <span id="tempVal" class="w-8 text-right font-mono">0.6</span>
+            </label>
+            <label class="flex items-center gap-2">
+              <span class="text-text-light" data-i18n="composer.lengthLabel">Longueur</span>
+              <input id="maxTok" type="number" value="1024" min="128" max="2048" class="w-20 bg-surface border border-border rounded-xl px-3 py-2 font-mono" />
+            </label>
+          </div>
+        </div>
+
+        <!-- Results / Personalization -->
+        <div id="personalization-view" class="glass rounded-2xl shadow-glass flex-col min-h-[420px] mt-6 hidden">
+            <div class="p-5 border-b border-border flex items-center gap-3">
+              <h2 class="font-display text-lg text-text-strong flex items-center gap-2"><i class="ph ph-starry-sky text-brand-400"></i> <span data-i18n="results.title">Proposition du Co‑Pilote</span></h2>
+              <button id="checkPolicyBtn" class="btn btn-outline text-sm ml-4"><i class="ph ph-check-square-offset"></i> <span data-i18n="results.checkPolicyBtn">Voir le conseil de l'IA</span></button>
+              <div id="loader" class="hidden flex items-center ml-auto">
+                <div class="h-5 w-5 rounded-full border-2 border-slate-600 border-t-brand-400 animate-spin"></div>
+                <p class="ml-2 text-sm text-text-light" data-i18n="results.generating">Génération...</p>
+              </div>
+            </div>
+            <div class="p-5 grid gap-4">
+              <textarea id="personalize-text" rows="12" class="w-full p-4 bg-surface rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand-500/60" data-i18n-placeholder="results.placeholder" placeholder="La réponse générée apparaîtra ici..."></textarea>
+              <div class="relative">
+                <textarea id="personalize-prompt" rows="2" class="w-full p-4 pr-24 bg-surface rounded-xl border border-border focus:outline-none focus:ring-2 focus:ring-brand-500/60 placeholder-slate-500" data-i18n-placeholder="results.refinePlaceholder" placeholder="Votre instruction de personnalisation... (ex: Rends le ton plus formel, ajoute une remise de 10%)"></textarea>
+                <button id="personalize-generateBtn" class="btn btn-primary absolute right-3 top-1/2 -translate-y-1/2"><i class="ph ph-pencil-simple"></i> <span data-i18n="results.updateBtn">Mettre à jour</span></button>
+              </div>
+              <p class="text-xs text-center text-text-light/70 mt-1" data-i18n="results.disclaimer">L'IA peut faire des erreurs. Vérifiez toujours les informations importantes.</p>
+              <div class="flex items-center justify-between">
+                <div id="personalize-loader" class="hidden flex items-center py-2">
+                  <div class="h-5 w-5 rounded-full border-2 border-slate-600 border-t-brand-400 animate-spin"></div>
+                  <p class="ml-2 text-sm text-text-light" data-i18n="results.updating">Mise à jour...</p>
+                </div>
+                <div class="flex-grow flex justify-end gap-2">
+                   <button id="copyResponseBtn" class="btn btn-ghost"><i class="ph ph-copy"></i> <span data-i18n="results.copyBtn">Copier la réponse</span></button>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tools & Data -->
+    <aside class="xl:col-span-3 space-y-6">
+      <div class="glass rounded-2xl shadow-glass">
+        <div class="p-5 border-b border-border flex items-center gap-2">
+          <h3 class="font-display text-lg text-text-strong flex items-center gap-2"><i class="ph ph-compass-tool text-brand-400"></i> <span data-i18n="insights.title">Insights & Routage</span></h3>
+          <span class="ml-auto tag">Beta</span>
+        </div>
+        <div class="p-5 space-y-4 text-sm">
+          <div id="insights" class="grid grid-cols-2 gap-3">
+            <div class="bg-surface border border-border rounded-xl p-3 flex items-start gap-3"><i class="ph ph-flag text-brand-400 text-lg mt-1"></i><div><div class="text-text-light" data-i18n="insights.intent">Intent</div><div id="ins-intent" class="font-semibold text-brand-400">—</div></div></div>
+            <div class="bg-surface border border-border rounded-xl p-3 flex items-start gap-3"><i class="ph ph-translate text-brand-400 text-lg mt-1"></i><div><div class="text-text-light" data-i18n="insights.language">Langue</div><div id="ins-lang" class="font-semibold text-brand-400">—</div></div></div>
+            <div class="bg-surface border border-border rounded-xl p-3 flex items-start gap-3"><i class="ph ph-smiley text-brand-400 text-lg mt-1"></i><div><div class="text-text-light" data-i18n="insights.sentiment">Sentiment</div><div id="ins-sent" class="font-semibold text-brand-400">—</div></div></div>
+            <div class="bg-surface border border-border rounded-xl p-3 flex items-start gap-3"><i class="ph ph-siren text-brand-400 text-lg mt-1"></i><div><div class="text-text-light" data-i18n="insights.urgency">Urgence</div><div id="ins-urg" class="font-semibold text-brand-400">—</div></div></div>
+          </div>
+          <div><div class="text-text-light mb-1" data-i18n="insights.steps">Étapes suggérées</div><ul id="ins-steps" class="list-disc list-inside space-y-1"><li class="text-slate-500" data-i18n="insights.noSteps">Aucune étape suggérée.</li></ul></div>
+          <div><div class="text-text-light mb-1" data-i18n="insights.kbHits">KB pertinente</div><div id="kbHits" class="flex flex-wrap gap-2"></div></div>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl shadow-glass">
+        <div class="p-5 border-b border-border flex items-center gap-2">
+          <h3 class="font-display text-lg text-text-strong flex items-center gap-2"><i class="ph ph-wrench text-brand-400"></i> <span data-i18n="tools.title">Outils & Données</span></h3>
+        </div>
+        <div id="tools-content">
+          <div class="p-5 text-sm space-y-4">
+            <div>
+              <div class="text-text-light mb-1" data-i18n="tools.orderLookup">Order lookup</div>
+              <div class="flex gap-2">
+                <input id="orderId" class="flex-1 bg-surface border border-border rounded-xl px-3 py-2" placeholder="Ex: AD-2025-1038" />
+                <button id="orderBtn" class="btn btn-outline"><span data-i18n="tools.searchBtn">Chercher</span></button>
+              </div>
+              <div id="orderCard" class="hidden mt-3 bg-surface border border-border rounded-xl p-3"></div>
+            </div>
+            <div id="contextual-actions" class="pt-3 border-t border-border">
+              <div class="text-text-light mb-2" data-i18n="tools.orderActions">Actions sur la commande</div>
+              <div class="grid grid-cols-2 gap-3">
+                <button id="genRma" class="btn btn-ghost w-full disabled:opacity-40 disabled:cursor-not-allowed" disabled><i class="ph ph-ticket"></i> <span data-i18n="tools.rmaBtn">Générer RMA</span></button>
+                <button id="genVoucher" class="btn btn-ghost w-full disabled:opacity-40 disabled:cursor-not-allowed" disabled><i class="ph ph-gift"></i> <span data-i18n="tools.voucherBtn">Générer Voucher</span></button>
+              </div>
+              <div id="actionOutWrapper" class="hidden mt-3 space-y-1">
+                <div id="actionOutLabel" class="text-xs text-text-light">Résultat de l'action :</div>
+                <div class="flex items-center gap-2 p-2 bg-surface border border-border rounded-xl">
+                    <code id="actionOut" class="flex-1 text-xs text-text-strong font-mono whitespace-pre-wrap"></code>
+                    <button id="copyActionOutBtn" class="btn btn-ghost p-1.5 h-auto leading-none" aria-label="Copier le résultat"><i class="ph ph-copy text-base"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Admin View (New Page) -->
+  <div id="admin-view" class="hidden fixed inset-0 z-50 bg-bg/80 backdrop-blur-sm p-4 overflow-y-auto">
+      <div class="px-4">
+          <header class="flex items-center justify-between mt-2 mb-6">
+              <div class="flex items-center gap-3">
+                  <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-brand-400 to-accent-500 flex items-center justify-center drop-shadow-glow">
+                      <i class="ph ph-database text-slate-900 text-xl"></i>
+                  </div>
+                  <div>
+                      <h1 class="font-display text-2xl font-bold leading-tight text-text-strong" data-i18n="admin.title">Centre d’administration</h1>
+                      <p class="text-sm text-text-light -mt-0.5" data-i18n="admin.subtitle">Gestion des connaissances, des intégrations et de l'équipe</p>
+                  </div>
+              </div>
+              <button id="backToMainBtn" class="btn btn-ghost"><i class="ph ph-arrow-left"></i> <span data-i18n="admin.backBtn">Retour au Co-Pilote</span></button>
+          </header>
+
+          <div class="flex items-start gap-6">
+              <!-- Admin Nav -->
+              <aside id="admin-nav" class="w-56 flex-shrink-0 space-y-1">
+                  <button data-tab="dashboard" class="admin-tab-btn active"><i class="ph ph-gauge"></i><span data-i18n="admin.nav.dashboard">Tableau de bord</span></button>
+                  <button data-tab="kb" class="admin-tab-btn"><i class="ph ph-books"></i><span data-i18n="admin.nav.kb">Base de connaissances</span></button>
+                  <button data-tab="data" class="admin-tab-btn"><i class="ph ph-table"></i><span data-i18n="admin.nav.data">Explorateur de données</span></button>
+                  <button data-tab="integrations" class="admin-tab-btn"><i class="ph ph-plugs-connected"></i><span data-i18n="admin.nav.integrations">Intégrations</span></button>
+                  <button data-tab="team" class="admin-tab-btn"><i class="ph ph-users-three"></i><span data-i18n="admin.nav.team">Gestion d'équipe</span></button>
+              </aside>
+
+              <!-- Admin Content -->
+              <main id="admin-content" class="flex-1">
+                  <!-- Dashboard Tab -->
+                  <div id="admin-tab-dashboard" class="admin-tab-content">
+                      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="glass rounded-xl p-4"><div class="text-sm text-text-light" data-i18n="admin.dashboard.stat1.label">Tickets résolus (jour)</div><div id="stat-resolved" class="text-3xl font-bold text-text-strong mt-1">0</div></div>
+                        <div class="glass rounded-xl p-4"><div class="text-sm text-text-light" data-i18n="admin.dashboard.stat2.label">Satisfaction (CSAT)</div><div id="stat-csat" class="text-3xl font-bold text-text-strong mt-1">N/A</div></div>
+                        <div class="glass rounded-xl p-4"><div class="text-sm text-text-light" data-i18n="admin.dashboard.stat3.label">Tps de réponse moyen</div><div id="stat-art" class="text-3xl font-bold text-text-strong mt-1">N/A</div></div>
+                        <div class="glass rounded-xl p-4"><div class="text-sm text-text-light" data-i18n="admin.dashboard.stat4.label">Générations IA</div><div id="stat-ai" class="text-3xl font-bold text-text-strong mt-1">0</div></div>
+                      </div>
+                      <div class="glass rounded-xl mt-6 p-5">
+                        <h3 class="font-display text-lg text-text-strong mb-3" data-i18n="admin.dashboard.intentsTitle">Intents les plus fréquents</h3>
+                        <div class="space-y-3 text-sm">
+                            <div class="bar-chart"><div class="bar-label" data-i18n="admin.dashboard.intent1">Retour Produit</div><div class="bar-bg"><div class="bar-fill bg-brand-500" style="width: 0%"></div></div><div class="bar-value">0%</div></div>
+                            <div class="bar-chart"><div class="bar-label" data-i18n="admin.dashboard.intent2">Support Technique</div><div class="bar-bg"><div class="bar-fill bg-accent-400" style="width: 0%"></div></div><div class="bar-value">0%</div></div>
+                            <div class="bar-chart"><div class="bar-label" data-i18n="admin.dashboard.intent3">Question Livraison</div><div class="bar-bg"><div class="bar-fill bg-amber-400" style="width: 0%"></div></div><div class="bar-value">0%</div></div>
+                        </div>
+                      </div>
+                  </div>
+                  <!-- KB Tab -->
+                  <div id="admin-tab-kb" class="admin-tab-content hidden">
+                      <div class="glass rounded-xl p-5">
+                         <h3 class="font-display text-lg text-text-strong mb-3" data-i18n="admin.kb.title">Éditeur de la Base de Connaissances</h3>
+                         <p class="text-sm text-text-light mb-4" data-i18n="admin.kb.description">Modifiez le contenu ci-dessous. L'IA utilisera cette source pour générer ses réponses. Le formatage Markdown est supporté.</p>
+                         <textarea id="admin-kb-editor" class="w-full font-mono text-xs bg-surface border-border border rounded-lg p-3" rows="20"></textarea>
+                         <div class="mt-4 flex justify-end gap-3">
+                             <button id="admin-kb-cancel-btn" class="btn btn-ghost" data-i18n="admin.kb.cancelBtn">Annuler les changements</button>
+                             <button id="admin-kb-save-btn" class="btn btn-primary" data-i18n="admin.kb.saveBtn">Sauvegarder et mettre à jour l'IA</button>
+                         </div>
+                      </div>
+                  </div>
+                   <!-- Data Explorer Tab -->
+                  <div id="admin-tab-data" class="admin-tab-content hidden space-y-6">
+                      <div class="glass rounded-xl">
+                          <div class="p-5 border-b border-border"><h3 class="font-display text-lg text-text-strong" data-i18n="admin.data.customersTitle">Clients Actifs</h3></div>
+                          <div class="max-h-60 overflow-y-auto"><table class="w-full text-sm text-left"><thead class="sticky top-0 bg-surface/80 backdrop-blur-sm text-xs text-text-light uppercase"><tr><th class="p-4">ID</th><th class="p-4" data-i18n="admin.data.customers.name">Nom</th><th class="p-4" data-i18n="admin.data.customers.lang">Langue</th><th class="p-4" data-i18n="admin.data.customers.tier">Tier</th></tr></thead><tbody id="data-explorer-customers-body"></tbody></table></div>
+                      </div>
+                       <div class="glass rounded-xl">
+                          <div class="p-5 border-b border-border"><h3 class="font-display text-lg text-text-strong" data-i18n="admin.data.ordersTitle">Commandes Récentes</h3></div>
+                          <div class="max-h-60 overflow-y-auto"><table class="w-full text-sm text-left"><thead class="sticky top-0 bg-surface/80 backdrop-blur-sm text-xs text-text-light uppercase"><tr><th class="p-4">ID</th><th class="p-4" data-i18n="admin.data.orders.customer">Client</th><th class="p-4" data-i18n="admin.data.orders.status">Statut</th><th class="p-4" data-i18n="admin.data.orders.date">Date</th></tr></thead><tbody id="data-explorer-orders-body"></tbody></table></div>
+                      </div>
+                  </div>
+                   <!-- Integrations Tab -->
+                  <div id="admin-tab-integrations" class="admin-tab-content hidden">
+                       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="glass rounded-2xl shadow-glass flex flex-col">
+                              <div class="p-5 border-b border-border"><h3 class="font-display text-lg text-text-strong flex items-center gap-2"><i class="ph ph-database-zap text-brand-400"></i> <span data-i18n="admin.integrations.dataSources.title">Source de Données Principale</span></h3></div>
+                              <div class="p-5 space-y-4">
+                                <!-- Data source status -->
+                                <div id="data-source-status-container">
+                                    <div id="data-source-connected" class="hidden">
+                                        <div class="bg-surface border border-emerald-500/30 rounded-xl p-4">
+                                            <div class="flex items-center justify-between">
+                                                <div class="text-sm font-semibold text-text-strong" data-i18n="admin.integrations.dataSources.connectedState">Source de données connectée</div>
+                                                <span class="tag bg-emerald-500/20 text-emerald-300 border-emerald-500/50" data-i18n="admin.integrations.platforms.connectedTag">Connecté</span>
+                                            </div>
+                                            <div class="mt-2 text-xs text-text-light"><span data-i18n="admin.integrations.dataSources.sourceLabel">Source :</span> <span id="connected-source-info" class="font-mono text-text"></span></div>
+                                             <div class="mt-1 text-xs text-text-light"><span data-i18n="admin.integrations.dataSources.lastSyncLabel">Dernière synchro :</span> <span id="connected-last-sync" class="font-mono text-text"></span></div>
+                                            <button id="disconnect-data-btn" class="btn btn-ghost text-sm w-full mt-3 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/20"><i class="ph ph-x-circle"></i><span data-i18n="admin.integrations.dataSources.disconnectBtn">Déconnecter & Réinitialiser</span></button>
+                                        </div>
+                                    </div>
+                                    <div id="data-source-disconnected">
+                                       <div class="text-center p-4 bg-surface rounded-xl border border-dashed border-border">
+                                           <i class="ph ph-plugs text-3xl text-text-light"></i>
+                                           <p class="text-sm font-semibold mt-1" data-i18n="admin.integrations.dataSources.noSource">Aucune source de données.</p>
+                                           <p class="text-xs text-text-light" data-i18n="admin.integrations.dataSources.pleaseUpload">Veuillez importer un fichier ou connecter une API.</p>
+                                       </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="data-source-config-container" class="pt-4 border-t border-border">
+                                    <div class="border-b border-border mb-3 flex gap-2">
+                                        <button data-tab="file" class="integration-tab-btn active"><span data-i18n="admin.integrations.dataSources.fileUploadTab">Import Fichier</span></button>
+                                        <button data-tab="api" class="integration-tab-btn"><span data-i18n="admin.integrations.dataSources.liveConnectionTab">Connexion Live</span></button>
+                                    </div>
+                                    
+                                    <!-- File Upload Tab -->
+                                    <div id="integration-tab-file" class="integration-tab-content">
+                                        <div id="file-drop-zone" class="relative block w-full rounded-lg border-2 border-dashed border-border p-8 text-center hover:border-brand-400/60 transition-colors cursor-pointer">
+                                            <i class="ph ph-upload-simple text-3xl text-text-light"></i>
+                                            <span class="mt-2 block text-sm font-semibold text-text-strong" data-i18n="admin.integrations.dataSources.dropzoneLabel">Glissez-déposez un fichier JSON</span>
+                                            <span class="mt-1 block text-xs text-text-light" data-i18n="admin.integrations.dataSources.browseLabel">ou parcourez vos fichiers</span>
+                                            <input type="file" id="bq-file-input" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept=".json">
+                                        </div>
+                                        <div id="file-display" class="hidden mt-3 bg-surface border border-border rounded-xl p-3 flex items-center justify-between text-sm">
+                                            <div>
+                                                <div class="text-xs text-text-light" data-i18n="admin.integrations.dataSources.fileSelectedLabel">Fichier sélectionné :</div>
+                                                <div id="file-name" class="font-semibold font-mono"></div>
+                                            </div>
+                                            <button id="remove-file-btn" class="btn btn-ghost text-xs text-rose-400 hover:bg-rose-500/10"><i class="ph ph-trash"></i> <span data-i18n="admin.integrations.dataSources.removeFileBtn">Supprimer</span></button>
+                                        </div>
+                                        <button id="integrate-file-btn" class="btn btn-primary text-sm mt-3 w-full disabled:opacity-40" disabled><i class="ph ph-arrow-fat-lines-up"></i><span data-i18n="admin.integrations.dataSources.integrateFileBtn">Intégrer le fichier</span></button>
+                                    </div>
+
+                                    <!-- API Connection Tab -->
+                                    <div id="integration-tab-api" class="integration-tab-content hidden space-y-3">
+                                        <div>
+                                            <label for="api-endpoint-input" class="block text-xs font-medium text-text-light mb-1" data-i18n="admin.integrations.dataSources.apiEndpointLabel">URL du point d'accès API</label>
+                                            <input type="text" id="api-endpoint-input" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono" placeholder="https://api.votre-crm.com/v1/data">
+                                        </div>
+                                        <div>
+                                            <label for="api-token-input" class="block text-xs font-medium text-text-light mb-1" data-i18n="admin.integrations.dataSources.apiTokenLabel">Jeton d'authentification (Bearer)</label>
+                                            <input type="password" id="api-token-input" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm font-mono" placeholder="VotreCléSecrète-XYZ...">
+                                        </div>
+                                        <button id="connect-api-btn" class="btn btn-primary text-sm w-full pt-2"><i class="ph ph-plugs-connected"></i><span data-i18n="admin.integrations.dataSources.connectApiBtn">Connecter & Synchroniser</span></button>
+                                    </div>
+                                </div>
+                              </div>
+                            </div>
+                             <div class="glass rounded-2xl shadow-glass flex flex-col">
+                              <div class="p-5 border-b border-border"><h3 class="font-display text-lg text-text-strong flex items-center gap-2"><i class="ph ph-buildings text-brand-400"></i> <span data-i18n="admin.integrations.platforms.title">CRM & Plateformes</span></h3></div>
+                              <div class="p-5 space-y-4">
+                                <div class="flex items-center justify-between"><span class="font-semibold">Zendesk</span><div id="integration-status-zendesk" class="flex items-center gap-2"></div></div>
+                                <div class="flex items-center justify-between"><span class="font-semibold">Salesforce</span><div id="integration-status-salesforce" class="flex items-center gap-2"></div></div>
+                                <div class="flex items-center justify-between"><span class="font-semibold">Intercom</span><div id="integration-status-intercom" class="flex items-center gap-2"></div></div>
+                              </div>
+                            </div>
+                          </div>
+                  </div>
+                  <!-- Team Tab -->
+                  <div id="admin-tab-team" class="admin-tab-content hidden">
+                      <div class="glass rounded-xl">
+                          <div class="p-5 border-b border-border flex items-center justify-between">
+                            <h3 id="admin-team-title" class="font-display text-lg text-text-strong" data-i18n="admin.team.title">Membres de l'équipe</h3>
+                            <button class="btn btn-primary"><i class="ph ph-plus"></i> <span data-i18n="admin.team.inviteBtn">Inviter un membre</span></button>
+                          </div>
+                          <table class="w-full text-sm text-left">
+                              <thead class="text-xs text-text-light uppercase"><tr><th class="p-4" data-i18n="admin.team.table.name">Nom</th><th class="p-4" data-i18n="admin.team.table.role">Rôle</th><th class="p-4" data-i18n="admin.team.table.status">Statut</th><th class="p-4" data-i18n="admin.team.table.activity">Dernière activité</th></tr></thead>
+                              <tbody id="admin-team-table-body">
+                                <!-- Team members will be rendered here dynamically -->
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </main>
+          </div>
+      </div>
+  </div>
+
+
+  <!-- Modals -->
+  <dialog id="historyModal" class="glass rounded-2xl p-0 w-[95vw] max-w-2xl">
+    <div class="p-5 border-b border-border flex items-center gap-2"><h4 class="font-display text-lg text-text-strong"><i class="ph ph-clock-counter-clockwise"></i> <span data-i18n="historyModal.title">Historique</span></h4><button id="historyModalCloseBtn" class="ml-auto btn btn-ghost text-sm" aria-label="Fermer"><i class="ph ph-x"></i></button></div>
+    <div class="p-5 space-y-3 text-sm max-h-[60vh] overflow-auto" id="historyList"></div>
+  </dialog>
+
+  <dialog id="voucherModal" class="glass rounded-2xl p-0 w-[95vw] max-w-sm">
+    <div class="p-5 border-b border-border flex items-center gap-2"><h4 class="font-display text-lg text-text-strong"><i class="ph ph-gift"></i> <span data-i18n="voucherModal.title">Générer un voucher</span></h4><button id="voucherModalCloseBtn" class="ml-auto btn btn-ghost text-sm" aria-label="Fermer"><i class="ph ph-x"></i></button></div>
+    <div class="p-5 space-y-3 text-sm">
+      <label class="block">
+        <span class="text-text-light mb-1" data-i18n="voucherModal.amountLabel">Montant du voucher (€)</span>
+        <input id="voucherAmount" type="number" value="20" min="5" max="200" class="w-full bg-surface border border-border rounded-xl px-3 py-2 font-mono" />
+      </label>
+      <button id="voucherGenerateBtn" class="btn btn-primary w-full"><span data-i18n="voucherModal.generateBtn">Générer le code</span></button>
+    </div>
+  </dialog>
+
+  <dialog id="policyModal" class="glass rounded-2xl p-0 w-[95vw] max-w-lg">
+    <div class="p-5 border-b border-border flex items-center gap-2"><h4 class="font-display text-lg text-text-strong"><i class="ph ph-lightbulb"></i> <span data-i18n="policyModal.title">Conseil de l'IA</span></h4><button id="policyModalCloseBtn" class="ml-auto btn btn-ghost text-sm" aria-label="Fermer"><i class="ph ph-x"></i></button></div>
+    <div class="p-5 max-h-[70vh] overflow-auto">
+      <div id="policyLoader" class="hidden flex items-center justify-center py-10"><div class="h-6 w-6 rounded-full border-4 border-slate-600 border-t-brand-400 animate-spin"></div><p class="ml-3 text-text-light" data-i18n="policyModal.loading">Analyse de la politique...</p></div>
+      <div id="policyAdvice" class="bg-surface border border-border rounded-xl p-4 text-sm space-y-2"></div>
+    </div>
+  </dialog>
+
+  <dialog id="settingsModal" class="glass rounded-2xl p-0 w-[95vw] max-w-lg">
+    <div class="p-5 border-b border-border flex items-center gap-2">
+      <h4 class="font-display text-lg text-text-strong"><i class="ph ph-gear"></i> <span data-i18n="settingsModal.title">Paramètres</span></h4>
+      <button id="settingsModalCloseBtn" class="ml-auto btn btn-ghost text-sm" aria-label="Fermer"><i class="ph ph-x"></i></button>
+    </div>
+    <div class="p-5 space-y-6 text-sm">
+        <div>
+            <h5 class="font-semibold text-text-strong mb-2" data-i18n="settingsModal.profile.title">Profil</h5>
+            <div class="text-text-light"><span data-i18n="settingsModal.profile.loggedInAs">Connecté en tant que</span> <span class="font-medium text-text">Léa Martin (Admin)</span></div>
+        </div>
+        <div>
+            <label for="language-select" class="font-semibold text-text-strong mb-2 block" data-i18n="settingsModal.language.label">Langue de l'interface</label>
+            <select id="language-select" class="w-full bg-surface border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/60">
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+                <option value="nl">Nederlands</option>
+            </select>
+        </div>
+        <div>
+            <h5 class="font-semibold text-text-strong mb-2" data-i18n="settingsModal.theme.label">Thème d'apparence</h5>
+            <div id="theme-selector" class="grid grid-cols-3 gap-3">
+              <label class="theme-choice-label"><input type="radio" name="theme" value="light" class="peer hidden"><div class="theme-choice-ui"><i class="ph ph-sun"></i><span data-i18n="settingsModal.theme.light">Clair</span></div></label>
+              <label class="theme-choice-label"><input type="radio" name="theme" value="dark" class="peer hidden"><div class="theme-choice-ui"><i class="ph ph-moon"></i><span data-i18n="settingsModal.theme.dark">Sombre</span></div></label>
+              <label class="theme-choice-label"><input type="radio" name="theme" value="auto" class="peer hidden"><div class="theme-choice-ui"><i class="ph ph-monitor"></i><span data-i18n="settingsModal.theme.system">Système</span></div></label>
+            </div>
+        </div>
+         <div>
+            <h5 class="font-semibold text-text-strong mb-2" data-i18n="settingsModal.notifications.label">Notifications</h5>
+            <div class="flex items-center justify-between bg-surface rounded-xl p-3 border border-border">
+                <span data-i18n="settingsModal.notifications.enable">Activer les notifications de bureau</span>
+                <button id="notification-toggle" role="switch" aria-checked="false" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-slate-700 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900">
+                    <span aria-hidden="true" class="pointer-events-none inline-block h-5 w-5 translate-x-0 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+  </dialog>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- App Script -->
+  <script type="module" src="index.tsx"></script>
+</body>
+</html>

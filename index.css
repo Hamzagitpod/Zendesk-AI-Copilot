@@ -1,0 +1,369 @@
+:root {
+  --bg: #0f172a; /* slate-900, more gray */
+  --surface: rgba(30, 41, 59, .7); /* slate-800 with opacity */
+  --border: rgba(51, 65, 85, .7);
+  --text: #cbd5e1; /* slate-300 */
+  --text-strong: #f1f5f9; /* slate-100 */
+  --text-light: #94a3b8; /* slate-400 */
+}
+
+[data-theme='light'] {
+  --bg: #f1f5f9; /* slate-100, more gray */
+  --surface: rgba(255, 255, 255, .8);
+  --border: rgba(203, 213, 225, .9); /* slate-300 */
+  --text: #334155; /* slate-700 */
+  --text-strong: #0f172a; /* slate-900 */
+  --text-light: #64748b; /* slate-500 */
+}
+
+body {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+/* Aurora + grid background */
+.bg-aurora {
+  position: fixed; inset: 0; pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(34,211,238,0.12), transparent 60%),
+    radial-gradient(1000px 500px at 90% 10%, rgba(217,70,239,0.12), transparent 60%),
+    radial-gradient(800px 400px at 50% 110%, rgba(56,189,248,0.10), transparent 60%);
+}
+[data-theme='light'] .bg-aurora {
+  opacity: 0.6;
+}
+
+.bg-grid {
+  position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(148,163,184,0.07) 1px, transparent 0);
+  background-size: 22px 22px;
+  animation: pan 36s linear infinite;
+  mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
+}
+[data-theme='light'] .bg-grid {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(100, 116, 139, 0.1) 1px, transparent 0);
+}
+
+@keyframes pan { 0%{background-position:0 0} 100%{background-position:100% 100%} }
+
+.glass {
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Note: .btn classes are defined via Tailwind in index.html, these are for reference */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  color: var(--text-strong);
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background-color: #06B6D4; /* brand-500 */
+  color: #0f172a; /* slate-900 */
+}
+.btn-primary:hover {
+  background-color: #22D3EE; /* brand-400 */
+}
+.btn-ghost {
+  background-color: transparent;
+  border: 1px solid transparent;
+}
+[data-theme='light'] .btn-ghost {
+  color: var(--text-strong);
+}
+
+.btn-ghost:hover {
+  background-color: rgba(51, 65, 85, 0.5); /* slate-700/50 */
+}
+[data-theme='light'] .btn-ghost:hover {
+  background-color: rgba(203, 213, 225, 0.5); /* slate-300/50 */
+}
+
+.btn-outline {
+  border: 1px solid rgba(6, 182, 212, 0.6); /* border-brand-500/60 */
+}
+.btn-outline:hover {
+  background-color: rgba(6, 182, 212, 0.1); /* hover:bg-brand-500/10 */
+}
+
+.tag {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid rgba(71, 85, 105, 0.6); /* border-slate-600/60 */
+  background-color: rgba(30, 41, 59, 0.5); /* bg-slate-800/50 */
+  color: var(--text);
+}
+[data-theme='light'] .tag {
+  background-color: rgba(226, 232, 240, 0.5); /* slate-200/50 */
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(71, 85, 105, 0.6); /* border-slate-600/60 */
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.75rem;
+  background-color: rgba(30, 41, 59, 0.6); /* bg-slate-800/60 */
+  color: var(--text-strong);
+}
+[data-theme='light'] .kbd {
+    background-color: rgba(226, 232, 240, 0.5); /* slate-200/50 */
+    border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+
+/* Format Switch */
+.format-btn {
+  border: none;
+  background-color: transparent;
+  color: var(--text-light);
+  font-weight: 500;
+}
+.format-btn.active {
+  background-color: rgba(51, 65, 85, 0.7);
+  color: var(--text-strong);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+[data-theme='light'] .format-btn.active {
+    background-color: rgba(255,255,255,0.8);
+}
+
+
+/* Toast */
+.toast { position: fixed; right: 16px; bottom: 16px; z-index: 50; }
+
+/* Policy Modal Highlight */
+#policyKbDisplay .highlight {
+    background-color: rgba(217, 70, 239, 0.2);
+    color: #f0abfc; /* fuchsia-300 */
+    padding: 0.1em 0.2em;
+    border-radius: 0.2em;
+}
+[data-theme='light'] #policyKbDisplay .highlight {
+    background-color: rgba(217, 70, 239, 0.15);
+    color: #a21caf; /* fuchsia-700 */
+}
+
+/* Prose styles for policy display */
+.prose {
+    color: var(--text);
+}
+.prose h2, .prose h3 {
+    color: var(--text-strong);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.3em;
+}
+.prose strong {
+    color: var(--text-strong);
+}
+.prose code {
+    background-color: rgba(51, 65, 85, 0.5);
+    padding: 0.2em 0.4em;
+    border-radius: 0.3em;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+[data-theme='light'] .prose code {
+    background-color: rgba(226, 232, 240, 0.8);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+[data-theme='light'] ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+textarea, select, input[type=number], input[type=text], input[type=password] {
+  color: var(--text-strong);
+}
+
+/* Disabled Tools Panel */
+.disabled-panel {
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Structured KB */
+#kb-structured-content details {
+    background: rgba(30, 41, 59, 0.3); /* slate-800/30 */
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    transition: background-color 0.2s ease;
+}
+[data-theme='light'] #kb-structured-content details {
+    background: rgba(226, 232, 240, 0.4); /* slate-200/40 */
+}
+#kb-structured-content summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+#kb-structured-content summary::-webkit-details-marker {
+    display: none;
+}
+#kb-structured-content summary::after {
+    content: '\\f125';
+    font-family: "Phosphor Icons";
+    font-weight: normal;
+    transition: transform 0.2s ease;
+}
+#kb-structured-content details[open] > summary {
+    border-bottom: 1px solid var(--border);
+}
+#kb-structured-content details[open] > summary::after {
+    transform: rotate(180deg);
+}
+#kb-structured-content .kb-section-content {
+    padding: 0.75rem 1rem;
+    white-space: pre-wrap;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    color: var(--text-light);
+}
+
+/* Admin View */
+.admin-tab-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
+    font-weight: 500;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    text-align: left;
+    color: var(--text-light);
+}
+.admin-tab-btn:hover {
+    background-color: var(--surface);
+    color: var(--text-strong);
+}
+.admin-tab-btn.active {
+    background: linear-gradient(to right, rgba(6, 182, 212, 0.2), transparent);
+    color: #67E8F9; /* brand-300 */
+    font-weight: 600;
+    border-right: 2px solid #22D3EE; /* brand-400 */
+}
+.admin-tab-btn i { font-size: 1.2rem; }
+
+/* Admin bar chart */
+.bar-chart { display: flex; align-items: center; gap: 1rem; }
+.bar-label { flex: 0 0 10rem; color: var(--text-light); }
+.bar-bg { flex-grow: 1; background: var(--surface); border-radius: 99px; height: 0.75rem; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 99px; }
+.bar-value { flex: 0 0 3rem; font-weight: 600; text-align: right; }
+
+/* Admin Integrations */
+.integration-tab-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    color: var(--text-light);
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transform: translateY(1px);
+    transition: all 0.2s ease;
+}
+.integration-tab-btn:hover {
+    color: var(--text-strong);
+}
+.integration-tab-btn.active {
+    color: #67E8F9; /* brand-300 */
+    font-weight: 600;
+    border-bottom-color: #22D3EE; /* brand-400 */
+}
+
+#file-drop-zone.dragover {
+    border-color: #22D3EE; /* brand-400 */
+    background-color: rgba(6, 182, 212, 0.1);
+}
+
+.integration-toggle-btn.btn-ghost {
+    border-color: rgba(244, 63, 94, 0.5); /* border-rose-500/50 */
+}
+.integration-toggle-btn.btn-ghost:hover {
+    background-color: rgba(244, 63, 94, 0.1); /* hover:bg-rose-500/10 */
+    border-color: rgba(244, 63, 94, 0.7); /* hover:border-rose-500/70 */
+    color: #FB7185; /* hover:text-rose-400 */
+}
+
+.integration-sync-btn.btn-ghost:hover {
+    color: #67E8F9; /* brand-300 */
+}
+
+
+/* Admin Data Explorer Table */
+#admin-tab-data table thead {
+    border-bottom: 1px solid var(--border);
+}
+#admin-tab-data table tbody tr:not(:last-child) {
+    border-bottom: 1px solid var(--border);
+}
+#admin-tab-data table td {
+    padding: 0.75rem 1rem;
+}
+
+
+/* Settings Modal Theme Selector */
+.theme-choice-ui {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1rem;
+  border-radius: 0.75rem;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.theme-choice-ui i { font-size: 1.5rem; }
+.peer:checked ~ .theme-choice-ui {
+  border-color: #22D3EE; /* brand-400 */
+  background-color: rgba(6, 182, 212, 0.1);
+  color: #67E8F9; /* brand-300 */
+}
+[data-theme='light'] .peer:checked ~ .theme-choice-ui {
+    color: var(--text-strong);
+}
+
+/* Settings Toggle Switch */
+[role="switch"][aria-checked="true"] {
+    background-color: #06B6D4; /* brand-500 */
+}
+[role="switch"][aria-checked="true"] > span {
+    transform: translateX(1.25rem);
+}
