@@ -816,6 +816,12 @@ const TL = [
   { t:14950, fn: () => showScene(0) },
 ];
 
+const EXPORT_MODE = new URLSearchParams(location.search).has('export');
+if (EXPORT_MODE){
+  // Hold the close scene through the end of the MP4 — no loop-back to hero.
+  TL.pop();
+}
+
 let startT = performance.now();
 function resetCues(){ TL.forEach(c => c.fired = false); }
 resetCues();
@@ -831,10 +837,12 @@ function syncAudio(timelineSec){
   }
 }
 
+const LOOP_CAP = EXPORT_MODE ? 60000 : 15000;
+
 function loop(now){
   drawParticles();
   let t = now - startT;
-  if (t >= 15000){ startT = now; t = 0; resetCues(); if (audioReady) try{track.currentTime = 0}catch(e){} }
+  if (t >= LOOP_CAP){ startT = now; t = 0; resetCues(); if (audioReady) try{track.currentTime = 0}catch(e){} }
   for (const cue of TL){
     if (!cue.fired && t >= cue.t){ cue.fn(); cue.fired = true; }
   }

@@ -37,7 +37,7 @@ const RECORD_MS = 15400;
   page.on('pageerror', err => console.error('[pageerror]', err.message));
 
   console.log('Loading', HTML);
-  await page.goto('file://' + HTML, { waitUntil: 'networkidle0', timeout: 60000 });
+  await page.goto('file://' + HTML + '?export=1', { waitUntil: 'networkidle0', timeout: 60000 });
   await page.evaluate(() => document.fonts && document.fonts.ready);
   await new Promise(r => setTimeout(r, 800));
 
@@ -49,24 +49,15 @@ const RECORD_MS = 15400;
     const t = document.getElementById('track');
     if (t) { try { t.muted = true; t.pause(); } catch(e){} }
     document.getElementById('stage').classList.add('beat-on');
-    // Reset timeline start so recording catches the beginning.
-    if (window.requestAnimationFrame) {
-      requestAnimationFrame(() => { window.__startReset = performance.now(); });
-    }
   });
 
-  // Hard reset the timeline start by reloading the loop function context.
-  // The script sets `startT = performance.now()` only once. We patch it by
-  // dispatching the replay button click logic via injected script.
+  // Restart the timeline from t=0 via the replay handler (it resets startT
+  // and clears cues in the script's closure scope).
   await page.evaluate(() => {
-    // emulate replay: reset cues and start time. The script's TL/startT are
-    // local consts inside an IIFE-like scope, but `resetCues`/`startT` are not
-    // exposed. Easiest: simulate the replay button click which IS bound.
     const r = document.querySelector('.replay');
     if (r) r.click();
   });
-
-  await new Promise(r => setTimeout(r, 200));
+  await new Promise(r => setTimeout(r, 150));
 
   console.log('Starting screencast →', WEBM_OUT);
   const recorder = await page.screencast({ path: WEBM_OUT });
