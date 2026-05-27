@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mission:dry-run": "tsx mission-chris/scripts/dry-run.ts"
   },
   "dependencies": {
     "@google/genai": "^1.19.0"
